@@ -36,4 +36,5 @@ def listing(request, listing_id):
 
 
 def search(request):
+    print("Hello!")
     return render(request, 'listings/search.html')
