@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages, auth
 from django.contrib.auth.models import User
+from contacts.models import Contact
 
 
 def register(request):
@@ -13,30 +14,27 @@ def register(request):
         password = request.POST['password']
         password2 = request.POST['password2']
 
-        # Check if Passwords match
-        if password == password2:
-            # check username
-            if User.objects.filter(username=username).exists():
-                messages.error(request, 'Username already exists')
-                return redirect('register')
-            else:
-                # check Email
-                if User.objects.filter(email=email).exists():
-                    messages.error(request, 'Email already exists')
-                    return redirect('register')
-                else:
-                    # Looks good
-                    user = User.objects.create_user(
-                        username=username, password=password, email=email, first_name=first_name, last_name=last_name)
-                # messages.success(request,'You are logged in')
-                # return redirect('index)
-                    user.save()
-                    messages.success(
-                        request, 'Registration complete. Please log in.')
-                    return redirect('login')
-        else:
-            messages.error(request, 'Passwords do not match')
+        # Check if passwords match
+        if password != password2:
+            messages.error(request, 'Passwords do not match.')
+
+        # Check if username already exists
+        if User.objects.filter(username=username).exists():
+            messages.error(request, 'Username already exists.')
+
+        # Check if email already exists
+        if User.objects.filter(email=email).exists():
+            messages.error(request, 'Email already exists.')
+
+        if messages.get_messages(request):
             return redirect('register')
+
+        user = User.objects.create_user(
+            username=username, password=password, email=email, first_name=first_name, last_name=last_name)
+        user.save()
+        messages.success(request, "You have successfully registered.")
+        return redirect('login')
+
     else:
         return render(request, 'accounts/register.html')
 
@@ -67,4 +65,10 @@ def logout(request):
 
 
 def dashboard(request):
-    return render(request, 'accounts/dashboard.html')
+    user_contacts = Contact.objects.order_by(
+        '-contact_date').filter(user_id=request.user.id)
+
+    context = {
+        'contacts': user_contacts
+    }
+    return render(request, 'accounts/dashboard.html', context)
